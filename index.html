@@ -275,6 +275,22 @@ const MAP_LOCALE = {
 const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const stopTime = (day, key) => { const it = day.items.find(x => x[7] === key); return it ? it[0] : ""; };
 
+// 지도 스타일을 받아 출처 표시에서 OpenFreeMap 이름만 뺌 (OpenMapTiles·OpenStreetMap 표시는 라이선스상 필수라 유지)
+async function loadStyle(dark) {
+  for (const url of dark ? [MAP_STYLE.dark, MAP_STYLE.light] : [MAP_STYLE.light]) {
+    try {
+      const res = await fetch(url); if (!res.ok) continue;
+      const style = await res.json();
+      Object.values(style.sources || {}).forEach(src => {
+        if (typeof src.attribution === "string")
+          src.attribution = src.attribution.replace(/<a[^>]*>\s*OpenFreeMap\s*<\/a>\s*/gi, "").trim();
+      });
+      return style;
+    } catch (e) {}
+  }
+  return dark ? MAP_STYLE.dark : MAP_STYLE.light;
+}
+
 function routeMap(day) {
   const col = `var(${day.color})`;
   const strip = day.route.map((k, i) => {
@@ -299,7 +315,7 @@ function routeMap(day) {
 // 경도·위도 좌표 사이의 대략적인 거리 (km)
 const segKm = (a, b) => { const dx = (b[0] - a[0]) * 111.32 * Math.cos((a[1] * Math.PI) / 180), dy = (b[1] - a[1]) * 110.57; return Math.hypot(dx, dy); };
 
-function initMap(day) {
+async function initMap(day) {
   const note = document.getElementById(`note-${day.id}`);
   const say = t => { note.textContent = t; note.hidden = false; };
   const tourBtn = document.getElementById(`tour-${day.id}`);
@@ -315,7 +331,7 @@ function initMap(day) {
 
   const map = new gl.Map({
     container: `map-${day.id}`,
-    style: dark ? MAP_STYLE.dark : MAP_STYLE.light,
+    style: await loadStyle(dark),
     bounds, fitBoundsOptions: { padding: pad() },
     cooperativeGestures: true, attributionControl: false, locale: MAP_LOCALE,
     dragRotate: false, pitchWithRotate: false, touchPitch: false, maxPitch: 0
@@ -323,6 +339,9 @@ function initMap(day) {
   map.addControl(new gl.NavigationControl({ showCompass: false }), "top-right");
   map.addControl(new gl.AttributionControl({ compact: true }), "bottom-right");
   try { map.touchZoomRotate.disableRotation(); } catch (e) {}
+  // 출처 표시는 처음부터 접힌 (i) 버튼으로
+  const foldAttrib = () => { const el = map.getContainer().querySelector(".maplibregl-ctrl-attrib"); if (el) el.classList.remove("maplibregl-compact-show"); };
+  map.once("load", foldAttrib); map.once("idle", foldAttrib);
 
   const empty = () => ({ type: "FeatureCollection", features: [] });
   const line = c => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: c } });
