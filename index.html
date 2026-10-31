@@ -8,9 +8,10 @@
 <meta name="description" content="11/07(토) ~ 11/08(일) 제주 1박 2일 여행 일정">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
+    --font: "Noto Sans KR", system-ui, -apple-system, sans-serif;
     --bg: #fbf7f1;
     --card: #ffffff;
     --ink: #1f2a2e;
@@ -46,10 +47,11 @@
     --sea: #4cc3cc; --sea-soft: #173235; --now: #3a3418;
     --land: #2b3431; --land-edge: #47554f; --water: #142126; --pin-ring: #f4f7f8; --wave: #1b2d33; --land-high: #33403a; --contour: #3c4a44; --contour-strong: #5d6e66; --shadow: none; color-scheme: dark;
   }
+  :root:lang(ja) { --font: "Noto Sans JP", "Noto Sans KR", system-ui, -apple-system, sans-serif; }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font-family: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+    font-family: var(--font);
     line-height: 1.5; -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 720px; margin: 0 auto; padding-block: 0 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -57,13 +59,18 @@
 
   header.hero { padding: 40px 0 20px; }
   .hero .eyebrow { color: var(--tangerine); font-weight: 700; font-size: 14px; letter-spacing: .04em; }
-  .hero h1 { margin: 4px 0 8px; font-size: 32px; font-weight: 900; letter-spacing: -.02em; }
+  .hero h1 { text-wrap: balance; margin: 4px 0 8px; font-size: 32px; font-weight: 900; letter-spacing: -.02em; }
   .hero p { margin: 0; color: var(--muted); font-size: 15px; }
   .summary { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
   .chip-stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; flex: 1 1 140px; }
   .chip-stat b { display: block; font-size: 18px; }
   .chip-stat span { font-size: 12px; color: var(--muted); }
 
+  .hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .lang { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .lang button { font: 700 12px var(--font); border: 0; background: none; color: var(--muted); padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .lang button:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
   .sync { margin: 12px 0 0; font-size: 12px; color: var(--sea); }
   .sync::before { content: "● "; }
   .sync.off { color: var(--muted); }
@@ -138,7 +145,7 @@
   .route-map .cap-text > span { font-weight: 700; font-size: 14px; }
   .route-map .cap-text small { color: var(--muted); font-size: 12px; }
   .map-tools { display: flex; gap: 6px; }
-  .tool { font: 700 13px "Noto Sans KR", sans-serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+  .tool { font: 700 13px var(--font); border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
   .tool:disabled { opacity: .5; cursor: default; }
   .tool.primary { background: var(--c); border-color: var(--c); color: var(--on-accent); }
   .tool:focus-visible, .stop:focus-visible, .pin:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
@@ -154,12 +161,12 @@
   @media (prefers-reduced-motion: reduce) { .tour-card { animation: none; } }
   .route-map .map { position: relative; height: 440px; background: var(--water); border-block: 1px solid var(--line); }
   @media (max-width: 500px) { .route-map .map { height: 360px; } }
-  .route-map .maplibregl-map { font-family: "Noto Sans KR", system-ui, sans-serif; }
+  .route-map .maplibregl-map { font-family: var(--font); }
   .route-map .map-note { margin: 0; padding: 0 14px 12px; font-size: 12px; color: var(--muted); }
 
   .pin { width: 34px; height: 42px; padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
   .pin span { display: grid; place-items: center; width: 34px; height: 34px; margin: 0 auto; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--c); border: 3px solid var(--pin-ring); box-sizing: border-box; transition: transform .15s; }
-  .pin i { transform: rotate(45deg); font: normal 900 14px "Noto Sans KR", sans-serif; color: var(--on-accent); }
+  .pin i { transform: rotate(45deg); font: normal 900 14px var(--font); color: var(--on-accent); }
   .pin:hover span { transform: rotate(-45deg) scale(1.12); }
   .pin.on span { transform: rotate(-45deg) scale(1.3); box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 30%, transparent); }
   .pin.on { z-index: 5; }
@@ -188,13 +195,19 @@
 <body>
 <div class="wrap">
   <header class="hero">
-    <div class="eyebrow">JEJU · 1박 2일</div>
-    <h1>🍊 제주 여행 일정</h1>
-    <p>11월 7일(토) 김포 출발 → 11월 8일(일) 제주 출발</p>
+    <div class="hero-top">
+      <div class="eyebrow" data-i18n="eyebrow">JEJU · 1박 2일</div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="ko" lang="ko">한국어</button>
+        <button type="button" data-lang="ja" lang="ja">日本語</button>
+      </div>
+    </div>
+    <h1 data-i18n="h1">🍊 제주 여행 일정</h1>
+    <p data-i18n="sub">11월 7일(토) 김포 출발 → 11월 8일(일) 제주 출발</p>
     <div class="summary">
-      <div class="chip-stat"><b id="hero-cost">₩184,788</b><span>인당 예상 비용</span></div>
-      <div class="chip-stat"><b>휘닉스 제주</b><span>숙소 · 힐리우스</span></div>
-      <div class="chip-stat"><b>무지개렌트카</b><span>렌터카</span></div>
+      <div class="chip-stat"><b id="hero-cost">₩184,788</b><span data-i18n="costLabel">인당 예상 비용</span></div>
+      <div class="chip-stat"><b data-i18n="stay">휘닉스 제주</b><span data-i18n="stayLabel">숙소 · 힐리우스</span></div>
+      <div class="chip-stat"><b data-i18n="car">무지개렌트카</b><span data-i18n="carLabel">렌터카</span></div>
     </div>
     <p class="sync" id="sync" hidden></p>
   </header>
@@ -273,6 +286,84 @@ const PLACES = {
   park981:    { name: "9.81파크",             lat: 33.3899391, lng: 126.3663248 },
   midam:      { name: "제주미담",             lat: 33.5023425, lng: 126.5373625 },
 };
+// ───── 언어 (한국어 / 日本語) ─────
+const LANGS = ["ko", "ja"];
+let LANG = (() => {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (LANGS.includes(q)) return q;
+  try { const v = localStorage.getItem("lang"); if (LANGS.includes(v)) return v; } catch (e) {}
+  return /^ja/i.test(navigator.language || "") ? "ja" : "ko";
+})();
+const PLACE_JA = {
+  airport: "済州国際空港", rent: "ムジゲレンタカー", suragan: "スラガン餅房", dotori: "ドトリキッチン",
+  ghibli: "スタジオジブリ展", hanaro: "ハナロマート城山", phoenix: "フェニックス済州", seopji: "ソプチコジ",
+  seogwipean: "ソギピアン ベーカリー", gyul: "ギュルメダル", park981: "9.81パーク", midam: "チェジュミダム"
+};
+const UI = {
+  ko: {
+    title: "제주 여행 일정", eyebrow: "JEJU · 1박 2일", h1: "🍊 제주 여행 일정",
+    sub: "11월 7일(토) 김포 출발 → 11월 8일(일) 제주 출발", costLabel: "인당 예상 비용",
+    stay: "휘닉스 제주", stayLabel: "숙소 · 힐리우스", car: "무지개렌트카", carLabel: "렌터카",
+    shuttle: "셔틀", min: n => `${n}분`, routeTitle: "이동 경로",
+    drive: (h, m) => `운전 약 ${h}시간${m ? ` ${m}분` : ""}`, spots: n => `${n}곳`, km: n => ` · 약 ${n}km`,
+    tour: "▶ 경로 따라가기", stop: "■ 멈추기", mapAria: d => `${d} 이동 경로 지도`,
+    mapFail: "지도를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.",
+    routeFail: "일부 구간은 도로 경로를 불러오지 못해 점선(직선)으로 표시했어요.",
+    unknown: list => `지도에 아직 없는 장소: ${list}`, nth: n => `${n}번째`, kakao: "🚗 카카오맵 길안내",
+    moving: (sh, m) => `${sh ? "셔틀" : "🚗 차로"}${m ? ` 약 ${m}분` : ""} 이동 중`,
+    tagMap: "📍 지도 보기", tagNav: "🚗 길안내", per: v => `인당 ${v}`,
+    totalTitle: "💰 인당 예상 비용", sum: "합계", now: "진행 중",
+    synced: hm => `구글 시트와 연동됨 · ${hm} 기준`, syncFail: "구글 시트를 불러오지 못해 저장된 일정을 보여 드려요",
+    locale: {
+      "CooperativeGesturesHandler.WindowsHelpText": "Ctrl 키를 누른 채 스크롤하면 확대/축소돼요",
+      "CooperativeGesturesHandler.MacHelpText": "⌘ 키를 누른 채 스크롤하면 확대/축소돼요",
+      "CooperativeGesturesHandler.MobileHelpText": "두 손가락으로 지도를 움직이세요",
+      "NavigationControl.ZoomIn": "확대", "NavigationControl.ZoomOut": "축소", "NavigationControl.ResetBearing": "북쪽으로 돌리기"
+    }
+  },
+  ja: {
+    title: "済州旅行の日程", eyebrow: "JEJU · 1泊2日", h1: "🍊 済州旅行の日程",
+    sub: "11月7日(土) 金浦発 → 11月8日(日) 済州発", costLabel: "1人あたりの予算",
+    stay: "フェニックス済州", stayLabel: "宿泊 · ヒリウス", car: "ムジゲレンタカー", carLabel: "レンタカー",
+    shuttle: "シャトル", min: n => `${n}分`, routeTitle: "移動ルート",
+    drive: (h, m) => `運転 約${h}時間${m ? `${m}分` : ""}`, spots: n => `${n}か所`, km: n => ` · 約${n}km`,
+    tour: "▶ ルートをたどる", stop: "■ 停止", mapAria: d => `${d} 移動ルートの地図`,
+    mapFail: "地図を読み込めませんでした。インターネット接続を確認して再読み込みしてください。",
+    routeFail: "一部の区間は道路ルートを取得できなかったため、点線（直線）で表示しています。",
+    unknown: list => `地図にまだない場所: ${list}`, nth: n => `${n}番目`, kakao: "🚗 カカオマップで経路案内",
+    moving: (sh, m) => `${sh ? "シャトルで" : "🚗 車で"}${m ? `約${m}分` : ""}移動中`,
+    tagMap: "📍 地図を見る", tagNav: "🚗 経路案内", per: v => `1人あたり ${v}`,
+    totalTitle: "💰 1人あたりの予算", sum: "合計", now: "進行中",
+    synced: hm => `Googleスプレッドシートと連携中 · ${hm} 時点`, syncFail: "スプレッドシートを読み込めなかったため、保存済みの日程を表示しています",
+    locale: {
+      "CooperativeGesturesHandler.WindowsHelpText": "Ctrlキーを押しながらスクロールすると拡大・縮小できます",
+      "CooperativeGesturesHandler.MacHelpText": "⌘キーを押しながらスクロールすると拡大・縮小できます",
+      "CooperativeGesturesHandler.MobileHelpText": "2本の指で地図を動かしてください",
+      "NavigationControl.ZoomIn": "拡大", "NavigationControl.ZoomOut": "縮小", "NavigationControl.ResetBearing": "北に戻す"
+    }
+  }
+};
+const t = (k, ...a) => { const v = UI[LANG][k] ?? UI.ko[k]; return typeof v === "function" ? v(...a) : v; };
+const pname = k => (LANG === "ja" && PLACE_JA[k]) || PLACES[k].name;
+const dateL = d => (LANG === "ja" ? String(d).replace(/[일월화수목금토]/g, c => ({ 일: "日", 월: "月", 화: "火", 수: "水", 목: "木", 금: "金", 토: "土" })[c]) : d);
+// 시트 내용(한국어) → 일본어. 사전에 없으면 시간·영업시간 같은 규칙으로 바꾸고, 그래도 한글이 남으면 원문 유지
+const JA_TEXT = { "김포공항집합": "金浦空港に集合", "김포공항출발": "金浦空港を出発", "제주공항도착": "済州空港に到着", "비행기하차및렌터카셔틀승차장이동": "降機後、レンタカーシャトル乗り場へ移動", "무지개렌트카셔틀이동": "ムジゲレンタカーのシャトルで移動", "차량인수(기름양확인)": "車両の受け取り（燃料残量を確認）", "수라간떡방이동": "スラガン餅房へ移動", "수라간떡방": "スラガン餅房", "도토리키친으로이동": "ドトリキッチンへ移動", "도토리키친": "ドトリキッチン", "스튜디오지브리전인제주이동": "スタジオジブリ展 in 済州へ移動", "스튜디오지브리전인제주관람": "スタジオジブリ展 in 済州を観覧", "하나로마트이동": "ハナロマートへ移動", "하나로마트장보기": "ハナロマートで買い出し", "휘닉스제주체크인센터로이동": "フェニックス済州のチェックインセンターへ移動", "휘닉스제주체크인센터이동": "フェニックス済州のチェックインセンターへ移動", "휘닉스제주주차장주차,체크인,전동카트수령": "フェニックス済州の駐車場に駐車、チェックイン、電動カートを受け取り", "힐리우스이동,짐정리": "ヒリウスへ移動、荷物の整理", "저녁식사": "夕食", "자유시간": "自由時間", "취침준비": "就寝準備", "기상및체크아웃준비": "起床・チェックアウト準備", "섭지코지관람": "ソプチコジを散策", "체크아웃": "チェックアウト", "서귀피안이동": "ソギピアンへ移動", "서귀피안": "ソギピアン", "귤메달이동": "ギュルメダルへ移動", "귤메달": "ギュルメダル", "981파크이동": "9.81パークへ移動", "981파크": "9.81パーク", "제주미담이동": "チェジュミダムへ移動", "제주미담": "チェジュミダム", "주유및렌트카반납": "給油・レンタカー返却", "제주공항이동": "済州空港へ移動", "공항수속및대기": "空港での手続き・待機", "21시영업종료": "21時閉店", "18시30분영업종료": "18時30分閉店", "17시영업종료": "17時閉店", "19시영업종료": "19時閉店", "22시영업종료": "22時閉店", "18시20분영업종료(17시40분마지막탑승)": "18時20分閉店（最終搭乗17時40分）", "브레이크타임16시30분~17시30분,21시라스트오더": "ブレイクタイム 16時30分〜17時30分、ラストオーダー21時", "19시이전셔틀버스약10~15분간격": "19時までのシャトルバスは約10〜15分間隔", "200,000원이내": "200,000ウォン以内", "체크인시직원용전동카트탑승가능": "チェックイン時はスタッフ用の電動カートに乗車可", "앱에서티켓구매": "アプリでチケットを購入", "300km기준계산": "300km走行で計算", "19시이후공항셔틀버스약20~25분간격": "19時以降の空港シャトルバスは約20〜25分間隔" };
+const jaKey = s => String(s).replace(/\s/g, "").replace(/（/g, "(").replace(/）/g, ")");
+function tr(s) {
+  if (!s || LANG !== "ja") return s;
+  const hit = JA_TEXT[jaKey(s)]; if (hit) return hit;
+  const m = String(s).match(/^(.*?)\s*(?:으로|로)?\s*이동$/);
+  if (m && m[1]) { const base = tr(m[1]); if (base !== m[1]) return `${base}へ移動`; }
+  const placeKey = Object.keys(PLACES).find(k => jaKey(PLACES[k].name) === jaKey(s));
+  if (placeKey) return PLACE_JA[placeKey];
+  const out = String(s)
+    .replace(/(\d+)\s*시\s*(\d+)\s*분/g, "$1時$2分").replace(/(\d+)\s*시/g, "$1時").replace(/(\d+)\s*분/g, "$1分")
+    .replace(/영업\s*종료/g, "閉店").replace(/라스트\s*오더/g, "ラストオーダー").replace(/브레이크\s*타임/g, "ブレイクタイム")
+    .replace(/마지막\s*탑승/g, "最終搭乗").replace(/(\d)\s*원/g, "$1ウォン").replace(/이내/g, "以内").replace(/휴무/g, "定休日")
+    .replace(/약\s*/g, "約").replace(/간격/g, "間隔").replace(/~/g, "〜");
+  return /[가-힣]/.test(out) ? s : out;
+}
+
 const kakaoTo = k => { const p = PLACES[k]; return `https://map.kakao.com/link/to/${encodeURIComponent(p.name)},${p.lat},${p.lng}`; };
 
 const MAP_STYLE = {
@@ -280,12 +371,7 @@ const MAP_STYLE = {
   dark: "https://tiles.openfreemap.org/styles/dark"
 };
 const DEM_TILES = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
-const MAP_LOCALE = {
-  "CooperativeGesturesHandler.WindowsHelpText": "Ctrl 키를 누른 채 스크롤하면 확대/축소돼요",
-  "CooperativeGesturesHandler.MacHelpText": "⌘ 키를 누른 채 스크롤하면 확대/축소돼요",
-  "CooperativeGesturesHandler.MobileHelpText": "두 손가락으로 지도를 움직이세요",
-  "NavigationControl.ZoomIn": "확대", "NavigationControl.ZoomOut": "축소", "NavigationControl.ResetBearing": "북쪽으로 돌리기"
-};
+
 const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const stopTime = (day, key) => { const it = day.items.find(x => x[7] === key); return it ? it[0] : ""; };
 
@@ -308,20 +394,20 @@ async function loadStyle(dark) {
 function routeMap(day) {
   const col = `var(${day.color})`;
   const strip = day.route.map((k, i) => {
-    const stop = `<li><button type="button" class="stop" data-day="${day.id}" data-i="${i}"><b style="background:${col}">${i + 1}</b><span>${esc(PLACES[k].name)}</span></button></li>`;
+    const stop = `<li><button type="button" class="stop" data-day="${day.id}" data-i="${i}"><b style="background:${col}">${i + 1}</b><span>${esc(pname(k))}</span></button></li>`;
     const lg = day.legs[i];
-    return stop + (lg ? `<li class="leg${lg.shuttle ? " shuttle" : ""}">${lg.shuttle ? "셔틀" : "🚗"}${lg.min ? ` ${lg.min}분` : ""}</li>` : "");
+    return stop + (lg ? `<li class="leg${lg.shuttle ? " shuttle" : ""}">${lg.shuttle ? t("shuttle") : "🚗"}${lg.min ? ` ${t("min", lg.min)}` : ""}</li>` : "");
   }).join("");
   const drive = day.legs.filter(l => !l.shuttle).reduce((s, l) => s + l.min, 0);
   return `<figure class="route-map" style="--c:${col}">
     <figcaption>
-      <div class="cap-text"><span>이동 경로</span><small>운전 약 ${Math.floor(drive / 60)}시간${drive % 60 ? " " + (drive % 60) + "분" : ""}<span id="km-${day.id}"></span> · ${day.route.length}곳</small></div>
+      <div class="cap-text"><span>${t("routeTitle")}</span><small>${t("drive", Math.floor(drive / 60), drive % 60)}<span id="km-${day.id}"></span> · ${t("spots", day.route.length)}</small></div>
       <div class="map-tools">
-        <button type="button" class="tool primary" id="tour-${day.id}" aria-pressed="false" disabled>▶ 경로 따라가기</button>
+        <button type="button" class="tool primary" id="tour-${day.id}" aria-pressed="false" disabled>${t("tour")}</button>
       </div>
     </figcaption>
     <div class="map-wrap">
-      <div class="map" id="map-${day.id}" role="region" aria-label="${day.date} 이동 경로 지도"></div>
+      <div class="map" id="map-${day.id}" role="region" aria-label="${esc(t("mapAria", dateL(day.date)))}"></div>
       <div class="tour-card" id="card-${day.id}" aria-live="polite" hidden></div>
     </div>
     <ol class="strip">${strip}</ol>
@@ -336,7 +422,7 @@ async function initMap(day) {
   const note = document.getElementById(`note-${day.id}`);
   const say = t => { note.textContent = t; note.hidden = false; };
   const tourBtn = document.getElementById(`tour-${day.id}`);
-  if (!window.maplibregl) { say("지도를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요."); return; }
+  if (!window.maplibregl) { say(t("mapFail")); return; }
   const gl = window.maplibregl;
   const darkMQ = matchMedia("(prefers-color-scheme: dark)");
   const dark = darkMQ.matches;
@@ -346,13 +432,17 @@ async function initMap(day) {
   const bounds = ll.reduce((b, c) => b.extend(c), new gl.LngLatBounds(ll[0], ll[0]));
   const pad = () => (document.documentElement.clientWidth < 500 ? 40 : 60);
 
+  const box = document.getElementById(`map-${day.id}`);
+  const style = await loadStyle(dark);
+  if (!box.isConnected) return; // 기다리는 사이 언어를 바꿔 다시 그린 경우
   const map = new gl.Map({
-    container: `map-${day.id}`,
-    style: await loadStyle(dark),
+    container: box,
+    style,
     bounds, fitBoundsOptions: { padding: pad() },
-    cooperativeGestures: true, attributionControl: false, locale: MAP_LOCALE,
+    cooperativeGestures: true, attributionControl: false, locale: t("locale"),
     dragRotate: false, pitchWithRotate: false, touchPitch: false, maxPitch: 0
   });
+  MAPS.push(map);
   map.addControl(new gl.NavigationControl({ showCompass: false }), "top-right");
   map.addControl(new gl.AttributionControl({ compact: true }), "bottom-right");
   try { map.touchZoomRotate.disableRotation(); } catch (e) {}
@@ -382,7 +472,7 @@ async function initMap(day) {
     const layers = map.getStyle().layers;
     layers.forEach(l => {
       if (l.type === "symbol" && l.layout && l.layout["text-field"]) {
-        try { map.setLayoutProperty(l.id, "text-field", ["coalesce", ["get", "name:ko"], ["get", "name"]]); } catch (e) {}
+        try { map.setLayoutProperty(l.id, "text-field", LANG === "ja" ? ["coalesce", ["get", "name:ja"], ["get", "name:ko"], ["get", "name"]] : ["coalesce", ["get", "name:ko"], ["get", "name"]]); } catch (e) {}
       }
     });
     const firstSymbol = (layers.find(l => l.type === "symbol") || {}).id;
@@ -409,13 +499,13 @@ async function initMap(day) {
 
   // 번호 핀과 말풍선
   const markers = day.route.map((k, i) => {
-    const p = PLACES[k], t = stopTime(day, k);
+    const p = PLACES[k], when = stopTime(day, k), nm = pname(k);
     const el = document.createElement("button");
     el.type = "button"; el.className = "pin"; el.style.setProperty("--c", color);
-    el.setAttribute("aria-label", `${i + 1}. ${p.name}`);
+    el.setAttribute("aria-label", `${i + 1}. ${nm}`);
     el.innerHTML = `<span><i>${i + 1}</i></span>`;
     const popup = new gl.Popup({ offset: 30, closeButton: false, maxWidth: "240px" }).setHTML(
-      `<div class="pop"><small>${i + 1}번째${t ? " · " + esc(t) : ""}</small><b>${esc(p.name)}</b><a href="${kakaoTo(k)}" target="_blank" rel="noopener">🚗 카카오맵 길안내</a></div>`);
+      `<div class="pop"><small>${t("nth", i + 1)}${when ? " · " + esc(when) : ""}</small><b>${esc(nm)}</b><a href="${kakaoTo(k)}" target="_blank" rel="noopener">${t("kakao")}</a></div>`);
     return new gl.Marker({ element: el, anchor: "bottom" }).setLngLat(ll[i]).setPopup(popup).addTo(map);
   });
   const closeAll = () => markers.forEach(m => { const pp = m.getPopup(); if (pp && pp.isOpen()) pp.remove(); });
@@ -459,8 +549,8 @@ async function initMap(day) {
   });
 
   Promise.all([routes, loaded, visible]).then(([lines]) => {
-    if (km) document.getElementById(`km-${day.id}`).textContent = ` · 약 ${Math.round(km)}km`;
-    if (failed) say("일부 구간은 도로 경로를 불러오지 못해 점선(직선)으로 표시했어요.");
+    if (km) document.getElementById(`km-${day.id}`).textContent = t("km", Math.round(km));
+    if (failed) say(t("routeFail"));
     st.pending.features = runs.map((r, ri) => (lines[ri] ? null : line(r.map(i => ll[i])))).filter(Boolean);
     push("pending");
     const parts = lines.filter(Boolean);
@@ -492,21 +582,21 @@ async function initMap(day) {
   const card = document.getElementById(`card-${day.id}`);
   const itemOf = k => day.items.find(x => x[7] === k);
   const showStop = i => {
-    const k = day.route[i], it = itemOf(k), name = PLACES[k].name;
+    const k = day.route[i], it = itemOf(k), name = pname(k);
     const flat = t => t.replace(/\s/g, "");
-    const what = it && flat(it[1]) !== flat(name) ? it[1] : "";
+    const what = it && flat(it[1]) !== flat(PLACES[k].name) ? tr(it[1]) : "";
     card.innerHTML = `<span class="n">${i + 1}</span><div class="t"><b>${esc(name)}</b><small>${[it ? it[0] : "", what].filter(Boolean).map(esc).join(" · ")}</small></div><span class="cnt">${i + 1}/${ll.length}</span>`;
     card.classList.remove("moving"); card.hidden = false;
   };
   const showMove = i => {
-    const lg = day.legs[i], to = PLACES[day.route[i + 1]].name;
-    card.innerHTML = `<span class="n">→</span><div class="t"><b>${esc(to)}</b><small>${lg.shuttle ? "셔틀" : "🚗 차로"}${lg.min ? ` 약 ${lg.min}분` : ""} 이동 중</small></div><span class="cnt">${i + 1}→${i + 2}</span>`;
+    const lg = day.legs[i], to = pname(day.route[i + 1]);
+    card.innerHTML = `<span class="n">→</span><div class="t"><b>${esc(to)}</b><small>${t("moving", lg.shuttle, lg.min)}</small></div><span class="cnt">${i + 1}→${i + 2}</span>`;
     card.classList.add("moving"); card.hidden = false;
   };
   const reset = () => {
     st.progress = empty(); st.head = empty(); push("progress"); push("head");
     dim(false); pinOn(-1); card.hidden = true;
-    tourBtn.textContent = "▶ 경로 따라가기"; tourBtn.setAttribute("aria-pressed", "false");
+    tourBtn.textContent = t("tour"); tourBtn.setAttribute("aria-pressed", "false");
   };
   const along = (c, cum, d) => {
     let j = 1; while (j < c.length - 1 && cum[j] < d) j++;
@@ -519,7 +609,7 @@ async function initMap(day) {
     if (!legCoords) return;
     const id = touring = Date.now();
     closeAll(); overview(700);
-    tourBtn.textContent = "■ 멈추기"; tourBtn.setAttribute("aria-pressed", "true");
+    tourBtn.textContent = t("stop"); tourBtn.setAttribute("aria-pressed", "true");
     dim(true); pinOn(0); showStop(0);
     st.head.features = [point(ll[0])]; push("head");
     await pause(reduce ? 0 : 1300);
@@ -668,21 +758,21 @@ DAYS.forEach(day => {
   grand += sub; subtotals.push([day, sub]);
 
   tabsEl.insertAdjacentHTML("beforeend",
-    `<a href="#${day.id}">${day.label}<small>${day.date}</small></a>`);
+    `<a href="#${day.id}">${day.label}<small>${dateL(day.date)}</small></a>`);
 
   const lis = day.items.map(([time, title, price, hours, map, note, move, place], i) => {
     const tags = [
       price ? `<span class="tag price">${won(price)}</span>` : "",
-      hours ? `<span class="tag hours">🕒 ${esc(hours)}</span>` : "",
-      map ? `<a class="tag map" href="${esc(map)}" target="_blank" rel="noopener">📍 지도 보기</a>` : "",
-      place ? `<a class="tag nav" href="${kakaoTo(place)}" target="_blank" rel="noopener">🚗 길안내</a>` : ""
+      hours ? `<span class="tag hours">🕒 ${esc(tr(hours))}</span>` : "",
+      map ? `<a class="tag map" href="${esc(map)}" target="_blank" rel="noopener">${t("tagMap")}</a>` : "",
+      place ? `<a class="tag nav" href="${kakaoTo(place)}" target="_blank" rel="noopener">${t("tagNav")}</a>` : ""
     ].join("");
     return `<li class="item${move ? " move" : ""}" data-day="${day.iso}" data-time="${esc(time)}">
       <div class="card">
         <div class="time">${esc(time)}</div>
-        <div class="title">${esc(title)}</div>
+        <div class="title">${esc(tr(title))}</div>
         ${tags && !move ? `<div class="meta">${tags}</div>` : ""}
-        ${note ? `<div class="note">${esc(note)}</div>` : ""}
+        ${note ? `<div class="note">${esc(tr(note))}</div>` : ""}
       </div>
     </li>`;
   }).join("");
@@ -690,8 +780,8 @@ DAYS.forEach(day => {
   daysEl.insertAdjacentHTML("beforeend", `
     <section class="day" id="${day.id}">
       <div class="day-head">
-        <h2><em>${day.label}</em>${day.date}</h2>
-        <span class="sub">인당 ${won(sub)}</span>
+        <h2><em>${day.label}</em>${dateL(day.date)}</h2>
+        <span class="sub">${t("per", won(sub))}</span>
       </div>
       ${routeMap(day)}
       <ol class="timeline">${lis}</ol>
@@ -699,9 +789,9 @@ DAYS.forEach(day => {
 });
 
 document.getElementById("total").innerHTML = `
-  <h3>💰 인당 예상 비용</h3>
-  ${subtotals.map(([d, s]) => `<div class="row"><span>${d.label} ${d.date}</span><span>${won(s)}</span></div>`).join("")}
-  <div class="row sum"><span>합계</span><span>${won(grand)}</span></div>`;
+  <h3>${t("totalTitle")}</h3>
+  ${subtotals.map(([d, s]) => `<div class="row"><span>${d.label} ${dateL(d.date)}</span><span>${won(s)}</span></div>`).join("")}
+  <div class="row sum"><span>${t("sum")}</span><span>${won(grand)}</span></div>`;
 document.getElementById("hero-cost").textContent = won(grand);
 }
 
@@ -727,28 +817,52 @@ function highlightNow() {
   });
   if (current) {
     current.classList.add("now");
-    current.querySelector(".title").insertAdjacentHTML("beforeend", `<span class="now-badge">진행 중</span>`);
+    current.querySelector(".title").insertAdjacentHTML("beforeend", `<span class="now-badge">${t("now")}</span>`);
   }
   return current;
 }
-(async () => {
+const MAPS = [];
+let SHEET_STATE = null; // null: 연동 안 함, { ok, at }
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
   const sync = document.getElementById("sync");
-  const fromSheet = await loadSheet();
-  if (fromSheet) DAYS = fromSheet;
-  render();
-  if (SHEET_CSV_URL) {
-    const hm = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit" }).format(new Date());
-    sync.textContent = fromSheet ? `구글 시트와 연동됨 · ${hm} 기준` : "구글 시트를 불러오지 못해 저장된 일정을 보여 드려요";
-    sync.classList.toggle("off", !fromSheet); sync.hidden = false;
+  if (SHEET_STATE) {
+    sync.textContent = SHEET_STATE.ok ? t("synced", SHEET_STATE.at) : t("syncFail");
+    sync.classList.toggle("off", !SHEET_STATE.ok); sync.hidden = false;
   }
+}
+function paint() {
+  MAPS.splice(0).forEach(m => { try { m.remove(); } catch (e) {} });
+  applyStatic();
+  render();
   DAYS.forEach(initMap);
   DAYS.forEach(d => {
     if (d.unknown && d.unknown.length) {
       const n = document.getElementById(`note-${d.id}`);
-      n.textContent = `지도에 아직 없는 장소: ${d.unknown.join(", ")}`; n.hidden = false;
+      n.textContent = t("unknown", d.unknown.map(tr).join(", ")); n.hidden = false;
     }
   });
-  const cur = highlightNow();
+  return highlightNow();
+}
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.lang === LANG) return;
+  LANG = b.dataset.lang;
+  try { localStorage.setItem("lang", LANG); } catch (e) {}
+  try { const u = new URL(location.href); u.searchParams.set("lang", LANG); history.replaceState(null, "", u); } catch (e) {}
+  const y = scrollY; paint(); scrollTo(0, y);
+}));
+
+(async () => {
+  const fromSheet = await loadSheet();
+  if (fromSheet) DAYS = fromSheet;
+  if (SHEET_CSV_URL) {
+    const hm = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+    SHEET_STATE = { ok: !!fromSheet, at: hm };
+  }
+  const cur = paint();
   if (cur && !location.hash) cur.scrollIntoView({ block: "center" });
   else if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   setInterval(highlightNow, 60000);
