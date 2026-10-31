@@ -136,7 +136,7 @@
   .route-map .cap-text small { color: var(--muted); font-size: 12px; }
   .map-tools { display: flex; gap: 6px; }
   .tool { font: 700 13px "Noto Sans KR", sans-serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
-  .tool[aria-pressed="true"]:not(.primary) { border-color: var(--c); color: var(--c); }
+  .tool:disabled { opacity: .5; cursor: default; }
   .tool.primary { background: var(--c); border-color: var(--c); color: var(--on-accent); }
   .tool:focus-visible, .stop:focus-visible, .pin:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
   .route-map .map { position: relative; height: 440px; background: var(--water); border-block: 1px solid var(--line); }
@@ -148,6 +148,9 @@
   .pin span { display: grid; place-items: center; width: 34px; height: 34px; margin: 0 auto; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--c); border: 3px solid var(--pin-ring); box-sizing: border-box; transition: transform .15s; }
   .pin i { transform: rotate(45deg); font: normal 900 14px "Noto Sans KR", sans-serif; color: var(--on-accent); }
   .pin:hover span { transform: rotate(-45deg) scale(1.12); }
+  .pin.on span { transform: rotate(-45deg) scale(1.3); box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 30%, transparent); }
+  .pin.on { z-index: 5; }
+  @media (prefers-reduced-motion: reduce) { .pin span { transition: none; } }
 
   .route-map .maplibregl-popup-content { background: var(--card); color: var(--ink); border-radius: 12px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
   .route-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--card); }
@@ -284,8 +287,7 @@ function routeMap(day) {
     <figcaption>
       <div class="cap-text"><span>이동 경로</span><small>운전 약 ${Math.floor(drive / 60)}시간${drive % 60 ? " " + (drive % 60) + "분" : ""}<span id="km-${day.id}"></span> · ${day.route.length}곳</small></div>
       <div class="map-tools">
-        <button type="button" class="tool" id="d3-${day.id}" aria-pressed="true">3D</button>
-        <button type="button" class="tool primary" id="tour-${day.id}">▶ 경로 따라가기</button>
+        <button type="button" class="tool primary" id="tour-${day.id}" aria-pressed="false" disabled>▶ 경로 따라가기</button>
       </div>
     </figcaption>
     <div class="map" id="map-${day.id}" role="region" aria-label="${day.date} 이동 경로 지도"></div>
@@ -294,9 +296,13 @@ function routeMap(day) {
   </figure>`;
 }
 
+// 경도·위도 좌표 사이의 대략적인 거리 (km)
+const segKm = (a, b) => { const dx = (b[0] - a[0]) * 111.32 * Math.cos((a[1] * Math.PI) / 180), dy = (b[1] - a[1]) * 110.57; return Math.hypot(dx, dy); };
+
 function initMap(day) {
   const note = document.getElementById(`note-${day.id}`);
   const say = t => { note.textContent = t; note.hidden = false; };
+  const tourBtn = document.getElementById(`tour-${day.id}`);
   if (!window.maplibregl) { say("지도를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요."); return; }
   const gl = window.maplibregl;
   const darkMQ = matchMedia("(prefers-color-scheme: dark)");
@@ -311,14 +317,17 @@ function initMap(day) {
     container: `map-${day.id}`,
     style: dark ? MAP_STYLE.dark : MAP_STYLE.light,
     bounds, fitBoundsOptions: { padding: pad() },
-    cooperativeGestures: true, attributionControl: false, maxPitch: 75, locale: MAP_LOCALE
+    cooperativeGestures: true, attributionControl: false, locale: MAP_LOCALE,
+    dragRotate: false, pitchWithRotate: false, touchPitch: false, maxPitch: 0
   });
-  map.addControl(new gl.NavigationControl({ visualizePitch: true }), "top-right");
+  map.addControl(new gl.NavigationControl({ showCompass: false }), "top-right");
   map.addControl(new gl.AttributionControl({ compact: true }), "bottom-right");
+  try { map.touchZoomRotate.disableRotation(); } catch (e) {}
 
   const empty = () => ({ type: "FeatureCollection", features: [] });
   const line = c => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: c } });
-  const st = { pending: empty(), shuttle: empty(), drive: empty(), is3d: true };
+  const point = c => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } });
+  const st = { pending: empty(), shuttle: empty(), drive: empty(), progress: empty(), head: empty() };
   const push = id => { const src = map.getSource(id); if (src) src.setData(st[id]); };
 
   // 셔틀 구간과, 이어지는 운전 구간 묶음
@@ -330,7 +339,7 @@ function initMap(day) {
   });
   st.pending.features = runs.map(r => line(r.map(i => ll[i])));
 
-  // 한국어 지명, 지형 음영, 3D 지형, 하늘, 경로 레이어 (스타일을 바꿔도 다시 붙음)
+  // 한국어 지명, 지형 음영, 경로 레이어 (스타일을 바꿔도 다시 붙음)
   let styleOk = false, fellBack = false;
   map.on("style.load", () => {
     styleOk = true;
@@ -343,20 +352,20 @@ function initMap(day) {
     const firstSymbol = (layers.find(l => l.type === "symbol") || {}).id;
     try {
       map.addSource("dem-hill", { type: "raster-dem", tiles: [DEM_TILES], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
-      map.addSource("dem-3d", { type: "raster-dem", tiles: [DEM_TILES], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
       map.addLayer({ id: "hill", type: "hillshade", source: "dem-hill",
-        paint: { "hillshade-exaggeration": dark ? 0.5 : 0.35, "hillshade-shadow-color": dark ? "#000000" : "#4a3b2a", "hillshade-highlight-color": dark ? "#2a3a3e" : "#ffffff" } }, firstSymbol);
-      if (st.is3d) map.setTerrain({ source: "dem-3d", exaggeration: 1.5 });
+        paint: { "hillshade-exaggeration": dark ? 0.45 : 0.3, "hillshade-shadow-color": dark ? "#000000" : "#4a3b2a", "hillshade-highlight-color": dark ? "#2a3a3e" : "#ffffff" } }, firstSymbol);
     } catch (e) {}
-    try {
-      map.setSky({ "sky-color": dark ? "#0f1a1f" : "#bfe3ec", "horizon-color": dark ? "#1d2c31" : "#f4efe6", "fog-color": dark ? "#12181a" : "#fbf7f1", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 });
-    } catch (e) {}
-    ["pending", "shuttle", "drive"].forEach(id => map.addSource(id, { type: "geojson", data: st[id] }));
+    Object.keys(st).forEach(id => map.addSource(id, { type: "geojson", data: st[id] }));
     const lineBase = { type: "line", layout: { "line-cap": "round", "line-join": "round" } };
+    const width = (a, b) => ["interpolate", ["linear"], ["zoom"], 8, a, 14, b];
     map.addLayer({ ...lineBase, id: "pending", source: "pending", paint: { "line-color": color, "line-width": 3, "line-opacity": 0.45, "line-dasharray": [2, 2] } });
     map.addLayer({ ...lineBase, id: "shuttle", source: "shuttle", paint: { "line-color": color, "line-width": 3.5, "line-dasharray": [0.5, 2] } });
-    map.addLayer({ ...lineBase, id: "drive-casing", source: "drive", paint: { "line-color": dark ? "#0b1214" : "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 6, 14, 11], "line-opacity": 0.9 } });
-    map.addLayer({ ...lineBase, id: "drive", source: "drive", paint: { "line-color": color, "line-width": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 14, 7] } });
+    map.addLayer({ ...lineBase, id: "drive-casing", source: "drive", paint: { "line-color": dark ? "#0b1214" : "#ffffff", "line-width": width(6, 11), "line-opacity": 0.9 } });
+    map.addLayer({ ...lineBase, id: "drive", source: "drive", paint: { "line-color": color, "line-width": width(3.5, 7) } });
+    map.addLayer({ ...lineBase, id: "progress-glow", source: "progress", paint: { "line-color": color, "line-width": width(10, 16), "line-opacity": 0.25, "line-blur": 3 } });
+    map.addLayer({ ...lineBase, id: "progress", source: "progress", paint: { "line-color": color, "line-width": width(4.5, 8) } });
+    map.addLayer({ id: "head", type: "circle", source: "head",
+      paint: { "circle-radius": 7, "circle-color": dark ? "#f4f7f8" : "#ffffff", "circle-stroke-color": color, "circle-stroke-width": 4 } });
   });
   map.on("error", () => {
     if (!styleOk && !fellBack && dark) { fellBack = true; map.setStyle(MAP_STYLE.light); }
@@ -374,15 +383,7 @@ function initMap(day) {
     return new gl.Marker({ element: el, anchor: "bottom" }).setLngLat(ll[i]).setPopup(popup).addTo(map);
   });
   const closeAll = () => markers.forEach(m => { const pp = m.getPopup(); if (pp && pp.isOpen()) pp.remove(); });
-  const focusStop = i => {
-    closeAll();
-    map.flyTo({ center: ll[i], zoom: 14.2, pitch: st.is3d ? 60 : 0, bearing: st.is3d ? -20 : 0, duration: reduce ? 0 : 2000, essential: true });
-    map.once("moveend", () => markers[i].getPopup().addTo(map));
-  };
-  const overview = (ms = 1600) => {
-    const cam = map.cameraForBounds(bounds, { padding: pad() });
-    map.easeTo({ ...cam, pitch: st.is3d ? 45 : 0, bearing: st.is3d ? -12 : 0, duration: reduce ? 0 : ms });
-  };
+  const overview = (ms = 900) => map.fitBounds(bounds, { padding: pad(), duration: reduce ? 0 : ms });
 
   // 도로 경로 받아서 그리기 (실패하면 직선 점선 유지)
   let km = 0, failed = false;
@@ -400,14 +401,33 @@ function initMap(day) {
     io.observe(map.getContainer());
   });
 
-  loaded.then(() => overview(1800));
+  // 구간별 좌표: 운전 경로를 들르는 장소 기준으로 잘라 구간마다 나눔
+  let legCoords = null;
+  const splitRun = (r, G) => {
+    const out = []; let start = 0;
+    for (let k = 1; k < r.length; k++) {
+      let end = G.length - 1;
+      if (k < r.length - 1) {
+        const p = ll[r[k]]; let best = Infinity;
+        for (let j = start; j < G.length; j++) { const d = segKm(G[j], p); if (d < best) { best = d; end = j; } }
+      }
+      out.push(G.slice(start, end + 1)); start = end;
+    }
+    return out;
+  };
+
+  Promise.all([routes, loaded]).then(([lines]) => {
+    legCoords = day.legs.map((lg, i) => [ll[i], ll[i + 1]]);
+    runs.forEach((r, ri) => { if (lines[ri]) splitRun(r, lines[ri]).forEach((c, k) => { if (c.length > 1) legCoords[r[k]] = c; }); });
+    tourBtn.disabled = false;
+  });
+
   Promise.all([routes, loaded, visible]).then(([lines]) => {
     if (km) document.getElementById(`km-${day.id}`).textContent = ` · 약 ${Math.round(km)}km`;
     if (failed) say("일부 구간은 도로 경로를 불러오지 못해 점선(직선)으로 표시했어요.");
-    const got = lines.map((c, ri) => c || null);
-    st.pending.features = runs.map((r, ri) => (got[ri] ? null : line(r.map(i => ll[i])))).filter(Boolean);
+    st.pending.features = runs.map((r, ri) => (lines[ri] ? null : line(r.map(i => ll[i])))).filter(Boolean);
     push("pending");
-    const parts = got.filter(Boolean);
+    const parts = lines.filter(Boolean);
     if (!parts.length) return;
     const total = parts.reduce((s, c) => s + c.length, 0);
     const draw = n => {
@@ -416,7 +436,7 @@ function initMap(day) {
       st.drive.features = feats; push("drive");
     };
     if (reduce) { draw(total); return; }
-    const t0 = performance.now(), dur = 2200;
+    const t0 = performance.now(), dur = 1800;
     const step = now => {
       const f = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - f, 3);
       draw(Math.max(2, Math.ceil(total * e)));
@@ -425,41 +445,74 @@ function initMap(day) {
     requestAnimationFrame(step);
   });
 
-  // 3D 켜기/끄기
-  const d3 = document.getElementById(`d3-${day.id}`);
-  d3.addEventListener("click", () => {
-    st.is3d = !st.is3d;
-    d3.setAttribute("aria-pressed", String(st.is3d));
-    try { map.setTerrain(st.is3d ? { source: "dem-3d", exaggeration: 1.5 } : null); } catch (e) {}
-    map.easeTo({ pitch: st.is3d ? 50 : 0, bearing: st.is3d ? map.getBearing() || -12 : 0, duration: reduce ? 0 : 900 });
-  });
-
-  // 경로 따라가기: 방문 순서대로 날아가며 장소를 보여 줌
-  const tourBtn = document.getElementById(`tour-${day.id}`);
+  // 경로 따라가기: 지도는 그대로 두고, 점이 경로 선을 따라 순서대로 이동
   let touring = 0;
   const pause = ms => new Promise(r => setTimeout(r, ms));
-  const moved = () => new Promise(r => map.once("moveend", r));
-  tourBtn.addEventListener("click", async () => {
-    if (touring) { touring = 0; map.stop(); return; }
-    const id = touring = Date.now();
-    tourBtn.textContent = "■ 멈추기"; tourBtn.setAttribute("aria-pressed", "true");
-    for (let i = 0; i < ll.length && touring === id; i++) {
-      closeAll();
-      const next = ll[Math.min(i + 1, ll.length - 1)], here = ll[i];
-      const bearing = st.is3d ? (Math.atan2(next[0] - here[0], next[1] - here[1]) * 180) / Math.PI : 0;
-      map.flyTo({ center: here, zoom: 14, pitch: st.is3d ? 62 : 0, bearing, duration: reduce ? 0 : 2600, essential: true });
-      await moved();
-      if (touring !== id) break;
-      markers[i].getPopup().addTo(map);
-      await pause(1700);
-    }
-    if (touring === id) { closeAll(); overview(2200); }
-    touring = 0;
+  const dim = on => ["drive", "shuttle", "pending"].forEach(id => {
+    try { map.setPaintProperty(id, "line-opacity", on ? 0.3 : id === "pending" ? 0.45 : 1); } catch (e) {}
+  });
+  const pinOn = i => markers.forEach((m, k) => m.getElement().classList.toggle("on", k === i));
+  const reset = () => {
+    st.progress = empty(); st.head = empty(); push("progress"); push("head");
+    dim(false); pinOn(-1);
     tourBtn.textContent = "▶ 경로 따라가기"; tourBtn.setAttribute("aria-pressed", "false");
+  };
+  const along = (c, cum, d) => {
+    let j = 1; while (j < c.length - 1 && cum[j] < d) j++;
+    const a = c[j - 1], b = c[j], seg = cum[j] - cum[j - 1] || 1, f = Math.max(0, Math.min(1, (d - cum[j - 1]) / seg));
+    return { idx: j, pt: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f] };
+  };
+
+  tourBtn.addEventListener("click", async () => {
+    if (touring) { touring = 0; reset(); return; }
+    if (!legCoords) return;
+    const id = touring = Date.now();
+    closeAll(); overview(700);
+    tourBtn.textContent = "■ 멈추기"; tourBtn.setAttribute("aria-pressed", "true");
+    dim(true); pinOn(0);
+    st.head.features = [point(ll[0])]; push("head");
+    await pause(reduce ? 0 : 750);
+
+    const legs = legCoords.map(c => {
+      const cum = [0]; for (let j = 1; j < c.length; j++) cum.push(cum[j - 1] + segKm(c[j - 1], c[j]));
+      return { c, cum, len: cum[cum.length - 1] };
+    });
+    const totalKm = legs.reduce((s, l) => s + l.len, 0) || 1;
+    const TOTAL_MS = Math.min(14000, Math.max(7000, totalKm * 70));
+    const done = [];
+
+    for (let i = 0; i < legs.length && touring === id; i++) {
+      const L = legs[i], dur = reduce ? 0 : Math.max(450, (L.len / totalKm) * TOTAL_MS);
+      await new Promise(resolve => {
+        const t0 = performance.now();
+        const step = now => {
+          if (touring !== id) return resolve();
+          const f = dur ? Math.min(1, (now - t0) / dur) : 1;
+          const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+          const { idx, pt } = along(L.c, L.cum, L.len * e);
+          st.progress.features = [...done, line([...L.c.slice(0, idx), pt])];
+          st.head.features = [point(pt)];
+          push("progress"); push("head");
+          if (f < 1) requestAnimationFrame(step); else resolve();
+        };
+        requestAnimationFrame(step);
+      });
+      if (touring !== id) break;
+      done.push(line(L.c));
+      pinOn(i + 1);
+      await pause(reduce ? 0 : 550);
+    }
+    if (touring === id) { await pause(1200); if (touring === id) { touring = 0; reset(); } }
   });
 
   document.querySelectorAll(`.stop[data-day="${day.id}"]`).forEach(b =>
-    b.addEventListener("click", () => { touring = 0; focusStop(Number(b.dataset.i)); }));
+    b.addEventListener("click", () => {
+      if (touring) { touring = 0; reset(); }
+      const i = Number(b.dataset.i);
+      closeAll();
+      map.flyTo({ center: ll[i], zoom: 14, duration: reduce ? 0 : 1600, essential: true });
+      map.once("moveend", () => markers[i].getPopup().addTo(map));
+    }));
 
   // 화면 테마가 바뀌면 지도도 바꿈
   darkMQ.addEventListener?.("change", () => location.reload());
