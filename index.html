@@ -64,6 +64,9 @@
   .chip-stat b { display: block; font-size: 18px; }
   .chip-stat span { font-size: 12px; color: var(--muted); }
 
+  .sync { margin: 12px 0 0; font-size: 12px; color: var(--sea); }
+  .sync::before { content: "● "; }
+  .sync.off { color: var(--muted); }
   nav.tabs {
     position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
     display: flex; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line);
@@ -189,10 +192,11 @@
     <h1>🍊 제주 여행 일정</h1>
     <p>11월 7일(토) 김포 출발 → 11월 8일(일) 제주 출발</p>
     <div class="summary">
-      <div class="chip-stat"><b>₩184,788</b><span>인당 예상 비용</span></div>
+      <div class="chip-stat"><b id="hero-cost">₩184,788</b><span>인당 예상 비용</span></div>
       <div class="chip-stat"><b>휘닉스 제주</b><span>숙소 · 힐리우스</span></div>
       <div class="chip-stat"><b>무지개렌트카</b><span>렌터카</span></div>
     </div>
+    <p class="sync" id="sync" hidden></p>
   </header>
 
   <nav class="tabs" id="tabs"></nav>
@@ -203,7 +207,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-const DAYS = [
+let DAYS = [
   {
     id: "day1", label: "DAY 1", date: "11/07(토)", iso: "2026-11-07", color: "--tangerine",
     route: ["airport", "rent", "suragan", "dotori", "ghibli", "hanaro", "phoenix"],
@@ -306,7 +310,7 @@ function routeMap(day) {
   const strip = day.route.map((k, i) => {
     const stop = `<li><button type="button" class="stop" data-day="${day.id}" data-i="${i}"><b style="background:${col}">${i + 1}</b><span>${esc(PLACES[k].name)}</span></button></li>`;
     const lg = day.legs[i];
-    return stop + (lg ? `<li class="leg${lg.shuttle ? " shuttle" : ""}">${lg.shuttle ? "셔틀 " : "🚗 "}${lg.min}분</li>` : "");
+    return stop + (lg ? `<li class="leg${lg.shuttle ? " shuttle" : ""}">${lg.shuttle ? "셔틀" : "🚗"}${lg.min ? ` ${lg.min}분` : ""}</li>` : "");
   }).join("");
   const drive = day.legs.filter(l => !l.shuttle).reduce((s, l) => s + l.min, 0);
   return `<figure class="route-map" style="--c:${col}">
@@ -496,7 +500,7 @@ async function initMap(day) {
   };
   const showMove = i => {
     const lg = day.legs[i], to = PLACES[day.route[i + 1]].name;
-    card.innerHTML = `<span class="n">→</span><div class="t"><b>${esc(to)}</b><small>${lg.shuttle ? "셔틀" : "🚗 차로"} 약 ${lg.min}분 이동 중</small></div><span class="cnt">${i + 1}→${i + 2}</span>`;
+    card.innerHTML = `<span class="n">→</span><div class="t"><b>${esc(to)}</b><small>${lg.shuttle ? "셔틀" : "🚗 차로"}${lg.min ? ` 약 ${lg.min}분` : ""} 이동 중</small></div><span class="cnt">${i + 1}→${i + 2}</span>`;
     card.classList.add("moving"); card.hidden = false;
   };
   const reset = () => {
@@ -570,8 +574,92 @@ const won = n => "₩" + n.toLocaleString("ko-KR");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 const toMin = t => { const [h, m] = t.trim().split(":").map(Number); return h * 60 + m; };
 
+// ───── 구글 시트 연동 ─────
+// 시트에서 [파일 → 공유 → 웹에 게시]로 '일정' 탭을 CSV로 게시한 주소. 비워 두면 아래 저장된 일정을 씀.
+const SHEET_CSV_URL = "";
+const TRIP_YEAR = 2026;
+const DAY_COLORS = ["--tangerine", "--sea"];
+// 시트의 '위치' 링크 → 지도 좌표가 있는 장소
+const LINK_PLACE = {
+  "5iTRY8MW": "rent", "xMjKAdxA": "suragan", "GgWkousC": "dotori", "G0pEKmpK": "ghibli",
+  "Fy2FnalF": "hanaro", "xbAXa2u0": "phoenix", "xoH8AY7q": "seopji", "G7V4dL7G": "seogwipean",
+  "x4GcDO8i": "gyul", "IgJG8AuB": "park981", "F6lTm4jL": "midam"
+};
+const flat = t => String(t || "").replace(/\s/g, "");
+function placeFor(title, link) {
+  const code = (link.match(/naver\.me\/([\w-]+)/) || [])[1];
+  if (code && LINK_PLACE[code]) return LINK_PLACE[code];
+  if (/제주공항|공항\s*수속/.test(title)) return "airport";
+  if (/^체크(인|아웃)$/.test(flat(title)) || (/휘닉스/.test(title) && /체크인/.test(title))) return "phoenix";
+  const f = flat(title);
+  return Object.keys(PLACES).find(k => f.includes(flat(PLACES[k].name))) || null;
+}
+const spanMin = t => { const [a, b] = String(t).split("-"); return b ? Math.max(0, toMin(b) - toMin(a)) : 0; };
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+function parseSheet(rows) {
+  const days = []; let day = null;
+  rows.slice(1).forEach(r => {
+    const [time = "", title0 = "", price = "", hours = "", link = "", note = ""] = r.map(c => String(c || "").trim());
+    const title = title0.replace(/（/g, "(").replace(/）/g, ")");
+    const m = time.match(/^(\d{1,2})\/(\d{1,2})\s*\((.)\)$/);
+    if (m && !title) {
+      const n = days.length + 1;
+      day = { id: `day${n}`, label: `DAY ${n}`, date: time, iso: `${TRIP_YEAR}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`,
+              color: DAY_COLORS[(n - 1) % DAY_COLORS.length], items: [], unknown: [] };
+      days.push(day); return;
+    }
+    if (!day || !title) return;
+    const move = /이동$/.test(title);
+    const cost = Number(price.replace(/[^\d]/g, "")) || null;
+    const place = move ? null : placeFor(title, link);
+    if (!move && link && !place) day.unknown.push(title);
+    day.items.push([time, title, cost, hours || null, link || null, note || null, move, place]);
+  });
+  // 방문 장소 순서와 구간별 이동 시간
+  days.forEach(d => {
+    d.route = []; d.legs = []; let min = 0, shuttle = false;
+    d.items.forEach(it => {
+      if (it[7]) {
+        if (d.route[d.route.length - 1] === it[7]) { min = 0; shuttle = false; return; }
+        // 사이에 '이동' 줄이 없으면 도착한 일정의 시간 안에 이동이 포함된 것으로 봄
+        if (d.route.length) d.legs.push({ min: min || spanMin(it[0]), shuttle });
+        d.route.push(it[7]); min = 0; shuttle = false;
+      } else if (it[6] && d.route.length) {
+        min += spanMin(it[0]);
+        if (/셔틀/.test(it[1] + (it[5] || ""))) shuttle = true;
+      }
+    });
+  });
+  return days.filter(d => d.items.length);
+}
+async function loadSheet() {
+  if (!SHEET_CSV_URL) return null;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const sep = SHEET_CSV_URL.includes("?") ? "&" : "?";
+    const res = await fetch(`${SHEET_CSV_URL}${sep}t=${Date.now()}`, { signal: ctl.signal, cache: "no-store" });
+    if (!res.ok) throw new Error(res.status);
+    const days = parseSheet(parseCSV(await res.text()));
+    return days.length ? days : null;
+  } catch (e) { return null; } finally { clearTimeout(timer); }
+}
+
+function render() {
 const daysEl = document.getElementById("days");
 const tabsEl = document.getElementById("tabs");
+daysEl.innerHTML = ""; tabsEl.innerHTML = "";
 let grand = 0;
 const subtotals = [];
 
@@ -614,6 +702,8 @@ document.getElementById("total").innerHTML = `
   <h3>💰 인당 예상 비용</h3>
   ${subtotals.map(([d, s]) => `<div class="row"><span>${d.label} ${d.date}</span><span>${won(s)}</span></div>`).join("")}
   <div class="row sum"><span>합계</span><span>${won(grand)}</span></div>`;
+document.getElementById("hero-cost").textContent = won(grand);
+}
 
 // 여행 당일에는 지금 진행 중인 일정을 강조 (한국 시간 기준)
 function highlightNow() {
@@ -641,10 +731,28 @@ function highlightNow() {
   }
   return current;
 }
-DAYS.forEach(initMap);
-const cur = highlightNow();
-if (cur && !location.hash) cur.scrollIntoView({ block: "center" });
-setInterval(highlightNow, 60000);
+(async () => {
+  const sync = document.getElementById("sync");
+  const fromSheet = await loadSheet();
+  if (fromSheet) DAYS = fromSheet;
+  render();
+  if (SHEET_CSV_URL) {
+    const hm = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit" }).format(new Date());
+    sync.textContent = fromSheet ? `구글 시트와 연동됨 · ${hm} 기준` : "구글 시트를 불러오지 못해 저장된 일정을 보여 드려요";
+    sync.classList.toggle("off", !fromSheet); sync.hidden = false;
+  }
+  DAYS.forEach(initMap);
+  DAYS.forEach(d => {
+    if (d.unknown && d.unknown.length) {
+      const n = document.getElementById(`note-${d.id}`);
+      n.textContent = `지도에 아직 없는 장소: ${d.unknown.join(", ")}`; n.hidden = false;
+    }
+  });
+  const cur = highlightNow();
+  if (cur && !location.hash) cur.scrollIntoView({ block: "center" });
+  else if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  setInterval(highlightNow, 60000);
+})();
 </script>
 </body>
 </html>
