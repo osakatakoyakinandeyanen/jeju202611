@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>제주 여행 일정</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<meta name="description" content="11/07(토) ~ 11/08(일) 제주 1박 2일 여행 일정">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf7f1;
+    --card: #ffffff;
+    --ink: #1f2a2e;
+    --muted: #6b7a80;
+    --line: #e6ded2;
+    --tangerine: #f08a24;
+    --tangerine-soft: #fff1e2;
+    --sea: #127c86;
+    --sea-soft: #e3f3f4;
+    --now: #fff6d6;
+    --on-accent: #ffffff;
+    --land: #efe6d6;
+    --land-edge: #d9ccb6;
+    --water: #dcecee;
+    --pin-ring: #ffffff;
+    --wave: #c9e0e3;
+    --land-high: #e3e2c4;
+    --contour: #d6cdb2;
+    --contour-strong: #b9ab8c;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181a; --card: #1b2326; --ink: #e9eef0; --muted: #93a3a9;
+      --line: #2c373b; --tangerine: #ff9a3c; --tangerine-soft: #3a2a1a;
+      --sea: #4cc3cc; --sea-soft: #173235; --now: #3a3418;
+      --land: #2b3431; --land-edge: #47554f; --water: #142126; --pin-ring: #f4f7f8; --wave: #1b2d33; --land-high: #33403a; --contour: #3c4a44; --contour-strong: #5d6e66; --shadow: none; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181a; --card: #1b2326; --ink: #e9eef0; --muted: #93a3a9;
+    --line: #2c373b; --tangerine: #ff9a3c; --tangerine-soft: #3a2a1a;
+    --sea: #4cc3cc; --sea-soft: #173235; --now: #3a3418;
+    --land: #2b3431; --land-edge: #47554f; --water: #142126; --pin-ring: #f4f7f8; --wave: #1b2d33; --land-high: #33403a; --contour: #3c4a44; --contour-strong: #5d6e66; --shadow: none; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding-block: 0 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+
+  header.hero { padding: 40px 0 20px; }
+  .hero .eyebrow { color: var(--tangerine); font-weight: 700; font-size: 14px; letter-spacing: .04em; }
+  .hero h1 { margin: 4px 0 8px; font-size: 32px; font-weight: 900; letter-spacing: -.02em; }
+  .hero p { margin: 0; color: var(--muted); font-size: 15px; }
+  .summary { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .chip-stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; flex: 1 1 140px; }
+  .chip-stat b { display: block; font-size: 18px; }
+  .chip-stat span { font-size: 12px; color: var(--muted); }
+
+  nav.tabs {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+    display: flex; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  nav.tabs a:focus-visible, .tag.map:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+  nav.tabs a {
+    flex: 1; text-align: center; text-decoration: none; color: var(--ink);
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 12px; font-weight: 700; font-size: 14px;
+  }
+  nav.tabs a small { font-weight: 500; color: var(--muted); margin-left: 4px; }
+
+  section.day { padding-top: 24px; scroll-margin-top: 64px; }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .day-head h2 { margin: 0; font-size: 22px; font-weight: 900; }
+  .day-head h2 em { font-style: normal; color: var(--tangerine); margin-right: 6px; }
+  .day-head .sub { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+  ol.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  ol.timeline::before {
+    content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--line);
+  }
+  .item { position: relative; padding-left: 28px; margin-bottom: 10px; }
+  .item::before {
+    content: ""; position: absolute; left: 1px; top: 18px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--card); border: 3px solid var(--tangerine);
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .time { font-size: 13px; font-weight: 700; color: var(--sea); font-variant-numeric: tabular-nums; }
+  .title { font-size: 16px; font-weight: 700; margin: 2px 0 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: 12px; border-radius: 6px; padding: 3px 8px; }
+  .tag.price { background: var(--tangerine-soft); color: var(--tangerine); font-weight: 700; }
+  .tag.hours { background: var(--sea-soft); color: var(--sea); }
+  .tag.map { background: transparent; border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+  .tag.map:hover { border-color: var(--sea); color: var(--sea); }
+  .note { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .note::before { content: "💡 "; }
+
+  /* 이동 구간 */
+  .item.move { margin: -2px 0 8px; }
+  .item.move::before { width: 8px; height: 8px; left: 4px; top: 9px; border: none; background: var(--line); }
+  .item.move .card { background: transparent; border: none; box-shadow: none; padding: 2px 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .item.move .time { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .item.move .title { font-size: 13px; font-weight: 500; color: var(--muted); margin: 0; }
+  .item.move .note { margin: 0; flex-basis: 100%; font-size: 12px; }
+
+  /* 지금 진행 중 */
+  .item.now .card { background: var(--now); border-color: var(--tangerine); }
+  .item.now::before { background: var(--tangerine); }
+  .now-badge { display: inline-block; margin-left: 6px; font-size: 11px; background: var(--tangerine); color: var(--on-accent); border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
+
+  footer.total {
+    margin-top: 32px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px; box-shadow: var(--shadow);
+  }
+  footer.total h3 { margin: 0 0 10px; font-size: 15px; }
+  footer.total .row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+  footer.total .row.sum { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 10px; font-weight: 900; font-size: 18px; color: var(--tangerine); }
+
+  /* 경로 지도 */
+  .route-map { margin: 0 0 16px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  .route-map figcaption { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; padding: 12px 14px; flex-wrap: wrap; }
+  .route-map .cap-text { display: flex; flex-direction: column; min-width: 0; }
+  .route-map .cap-text > span { font-weight: 700; font-size: 14px; }
+  .route-map .cap-text small { color: var(--muted); font-size: 12px; }
+  .map-tools { display: flex; gap: 6px; }
+  .tool { font: 700 13px "Noto Sans KR", sans-serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+  .tool[aria-pressed="true"]:not(.primary) { border-color: var(--c); color: var(--c); }
+  .tool.primary { background: var(--c); border-color: var(--c); color: var(--on-accent); }
+  .tool:focus-visible, .stop:focus-visible, .pin:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+  .route-map .map { position: relative; height: 440px; background: var(--water); border-block: 1px solid var(--line); }
+  @media (max-width: 500px) { .route-map .map { height: 360px; } }
+  .route-map .maplibregl-map { font-family: "Noto Sans KR", system-ui, sans-serif; }
+  .route-map .map-note { margin: 0; padding: 0 14px 12px; font-size: 12px; color: var(--muted); }
+
+  .pin { width: 34px; height: 42px; padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
+  .pin span { display: grid; place-items: center; width: 34px; height: 34px; margin: 0 auto; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--c); border: 3px solid var(--pin-ring); box-sizing: border-box; transition: transform .15s; }
+  .pin i { transform: rotate(45deg); font: normal 900 14px "Noto Sans KR", sans-serif; color: var(--on-accent); }
+  .pin:hover span { transform: rotate(-45deg) scale(1.12); }
+
+  .route-map .maplibregl-popup-content { background: var(--card); color: var(--ink); border-radius: 12px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+  .route-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--card); }
+  .route-map .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--card); }
+  .pop { display: flex; flex-direction: column; gap: 2px; }
+  .pop small { color: var(--muted); font-size: 11px; }
+  .pop b { font-size: 15px; }
+  .pop a { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--c); text-decoration: none; }
+
+  .route-map .strip { list-style: none; margin: 0; padding: 12px 14px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; font-size: 13px; }
+  .route-map .strip .stop { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; font: inherit; color: var(--ink); cursor: pointer; }
+  .route-map .strip .stop:hover { border-color: var(--c); }
+  .route-map .strip .stop b { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: var(--on-accent); font-variant-numeric: tabular-nums; }
+  .route-map .strip .leg { color: var(--muted); font-size: 12px; padding: 0 2px; }
+  .route-map .strip .leg::before { content: "→ "; }
+  .route-map .strip .leg.shuttle { font-style: italic; }
+  .tag.nav { background: transparent; border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+  .tag.nav:hover { border-color: var(--tangerine); color: var(--tangerine); }
+  .tag.nav:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">JEJU · 1박 2일</div>
+    <h1>🍊 제주 여행 일정</h1>
+    <p>11월 7일(토) 김포 출발 → 11월 8일(일) 제주 출발</p>
+    <div class="summary">
+      <div class="chip-stat"><b>₩184,788</b><span>인당 예상 비용</span></div>
+      <div class="chip-stat"><b>휘닉스 제주</b><span>숙소 · 힐리우스</span></div>
+      <div class="chip-stat"><b>무지개렌트카</b><span>렌터카</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <main id="days"></main>
+
+  <footer class="total" id="total"></footer>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const DAYS = [
+  {
+    id: "day1", label: "DAY 1", date: "11/07(토)", iso: "2026-11-07", color: "--tangerine",
+    route: ["airport", "rent", "suragan", "dotori", "ghibli", "hanaro", "phoenix"],
+    legs: [{ min: 10, shuttle: true }, { min: 10 }, { min: 15 }, { min: 45 }, { min: 30 }, { min: 15 }],
+    items: [
+      ["10:10", "김포공항 집합"],
+      ["11:55", "김포공항 출발"],
+      ["13:10", "제주공항 도착", null, null, null, null, false, "airport"],
+      ["13:10 - 13:25", "비행기 하차 및 렌터카 셔틀 승차장 이동", null, null, null, null, true],
+      ["13:25 - 13:35", "무지개렌트카 셔틀 이동", null, null, null, "19시 이전 셔틀버스 약 10~15분 간격", true],
+      ["13:35 - 13:50", "차량 인수 (기름양 확인)", 11288, "21시 영업종료", "https://naver.me/5iTRY8MW", null, false, "rent"],
+      ["13:50 - 14:00", "수라간 떡방 이동", null, null, null, null, true],
+      ["14:00 - 14:10", "수라간떡방", 11000, "18시 30분 영업종료", "https://naver.me/xMjKAdxA", null, false, "suragan"],
+      ["14:10 - 14:25", "도토리 키친으로 이동", null, null, null, null, true],
+      ["14:25 - 15:05", "도토리 키친", 11000, "17시 영업종료", "https://naver.me/GgWkousC", null, false, "dotori"],
+      ["15:05 - 15:50", "스튜디오 지브리전 인 제주 이동", null, null, null, null, true],
+      ["15:50 - 17:30", "스튜디오 지브리전 인 제주 관람", 22000, "19시 영업종료", "https://naver.me/G0pEKmpK", null, false, "ghibli"],
+      ["17:30 - 18:00", "하나로마트 이동", null, null, null, null, true],
+      ["18:00 - 18:30", "하나로마트 장보기", 25000, "22시 영업종료", "https://naver.me/Fy2FnalF", "200,000원 이내", false, "hanaro"],
+      ["18:30 - 18:45", "휘닉스 제주 체크인 센터로 이동", null, null, null, null, true],
+      ["18:45 - 19:00", "휘닉스 제주 주차장 주차, 체크인, 전동카트 수령", null, null, null, null, false, "phoenix"],
+      ["19:00 - 19:15", "힐리우스 이동, 짐 정리", null, null, "https://naver.me/xbAXa2u0", "체크인 시 직원용 전동카트 탑승 가능"],
+      ["19:15 - 20:15", "저녁식사"],
+      ["20:15 - 23:30", "자유시간"],
+      ["23:30 - 24:00", "취침 준비"],
+    ]
+  },
+  {
+    id: "day2", label: "DAY 2", date: "11/08(일)", iso: "2026-11-08", color: "--sea",
+    route: ["seopji", "phoenix", "seogwipean", "gyul", "park981", "midam", "rent", "airport"],
+    legs: [{ min: 20 }, { min: 10 }, { min: 60 }, { min: 40 }, { min: 45 }, { min: 30 }, { min: 30, shuttle: true }],
+    items: [
+      ["08:30 - 09:30", "기상 및 체크아웃 준비"],
+      ["09:30 - 10:30", "섭지코지 관람", null, null, "https://naver.me/xoH8AY7q", null, false, "seopji"],
+      ["10:30 - 10:50", "휘닉스 제주 체크인 센터 이동", null, null, null, null, true],
+      ["10:50 - 11:00", "체크아웃", null, null, null, null, false, "phoenix"],
+      ["11:00 - 11:10", "서귀피안 이동", null, null, null, null, true],
+      ["11:10 - 12:00", "서귀피안", 20000, "19시 영업종료", "https://naver.me/G7V4dL7G", null, false, "seogwipean"],
+      ["12:00 - 13:00", "귤메달 이동", null, null, null, null, true],
+      ["13:00 - 13:20", "귤메달", 12000, "19시 영업종료", "https://naver.me/x4GcDO8i", null, false, "gyul"],
+      ["13:20 - 14:00", "981파크 이동", null, null, null, null, true],
+      ["14:00 - 17:15", "981파크", 54500, "18시 20분 영업종료 (17시 40분 마지막 탑승)", "https://naver.me/IgJG8AuB", "앱에서 티켓 구매", false, "park981"],
+      ["17:15 - 18:00", "제주미담 이동", null, null, null, null, true],
+      ["18:00 - 18:50", "제주미담", 10000, "브레이크타임 16시 30분 ~ 17시 30분, 21시 라스트오더", "https://naver.me/F6lTm4jL", null, false, "midam"],
+      ["18:50 - 19:20", "주유 및 렌트카 반납", 8000, "21시 영업종료", "https://naver.me/5iTRY8MW", "300km 기준 계산", false, "rent"],
+      ["19:20 - 19:50", "제주공항 이동", null, null, null, "19시 이후 공항 셔틀버스 약 20~25분 간격", true],
+      ["19:50 - 21:00", "공항 수속 및 대기", null, null, null, null, false, "airport"],
+    ]
+  }
+];
+
+const PLACES = {
+  airport:    { name: "제주국제공항",         lat: 33.5070772, lng: 126.4934311 },
+  rent:       { name: "무지개렌트카",         lat: 33.4961139, lng: 126.4827221 },
+  suragan:    { name: "수라간떡방",           lat: 33.4862367, lng: 126.4845365 },
+  dotori:     { name: "도토리키친",           lat: 33.5153877, lng: 126.5186172 },
+  ghibli:     { name: "스튜디오 지브리전",     lat: 33.4362975, lng: 126.7303396 },
+  hanaro:     { name: "하나로마트 성산", lat: 33.4462629, lng: 126.9117169 },
+  phoenix:    { name: "휘닉스 제주",          lat: 33.4303109, lng: 126.9293899 },
+  seopji:     { name: "섭지코지",             lat: 33.4242095, lng: 126.9311110 },
+  seogwipean: { name: "서귀피안 베이커리",     lat: 33.4351951, lng: 126.9222463 },
+  gyul:       { name: "귤메달",               lat: 33.5171238, lng: 126.5229357 },
+  park981:    { name: "9.81파크",             lat: 33.3899391, lng: 126.3663248 },
+  midam:      { name: "제주미담",             lat: 33.5023425, lng: 126.5373625 },
+};
+const kakaoTo = k => { const p = PLACES[k]; return `https://map.kakao.com/link/to/${encodeURIComponent(p.name)},${p.lat},${p.lng}`; };
+
+const MAP_STYLE = {
+  light: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark"
+};
+const DEM_TILES = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+const MAP_LOCALE = {
+  "CooperativeGesturesHandler.WindowsHelpText": "Ctrl 키를 누른 채 스크롤하면 확대/축소돼요",
+  "CooperativeGesturesHandler.MacHelpText": "⌘ 키를 누른 채 스크롤하면 확대/축소돼요",
+  "CooperativeGesturesHandler.MobileHelpText": "두 손가락으로 지도를 움직이세요",
+  "NavigationControl.ZoomIn": "확대", "NavigationControl.ZoomOut": "축소", "NavigationControl.ResetBearing": "북쪽으로 돌리기"
+};
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const stopTime = (day, key) => { const it = day.items.find(x => x[7] === key); return it ? it[0] : ""; };
+
+function routeMap(day) {
+  const col = `var(${day.color})`;
+  const strip = day.route.map((k, i) => {
+    const stop = `<li><button type="button" class="stop" data-day="${day.id}" data-i="${i}"><b style="background:${col}">${i + 1}</b><span>${esc(PLACES[k].name)}</span></button></li>`;
+    const lg = day.legs[i];
+    return stop + (lg ? `<li class="leg${lg.shuttle ? " shuttle" : ""}">${lg.shuttle ? "셔틀 " : "🚗 "}${lg.min}분</li>` : "");
+  }).join("");
+  const drive = day.legs.filter(l => !l.shuttle).reduce((s, l) => s + l.min, 0);
+  return `<figure class="route-map" style="--c:${col}">
+    <figcaption>
+      <div class="cap-text"><span>이동 경로</span><small>운전 약 ${Math.floor(drive / 60)}시간${drive % 60 ? " " + (drive % 60) + "분" : ""}<span id="km-${day.id}"></span> · ${day.route.length}곳</small></div>
+      <div class="map-tools">
+        <button type="button" class="tool" id="d3-${day.id}" aria-pressed="true">3D</button>
+        <button type="button" class="tool primary" id="tour-${day.id}">▶ 경로 따라가기</button>
+      </div>
+    </figcaption>
+    <div class="map" id="map-${day.id}" role="region" aria-label="${day.date} 이동 경로 지도"></div>
+    <ol class="strip">${strip}</ol>
+    <p class="map-note" id="note-${day.id}" hidden></p>
+  </figure>`;
+}
+
+function initMap(day) {
+  const note = document.getElementById(`note-${day.id}`);
+  const say = t => { note.textContent = t; note.hidden = false; };
+  if (!window.maplibregl) { say("지도를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요."); return; }
+  const gl = window.maplibregl;
+  const darkMQ = matchMedia("(prefers-color-scheme: dark)");
+  const dark = darkMQ.matches;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const color = cssVar(day.color);
+  const ll = day.route.map(k => [PLACES[k].lng, PLACES[k].lat]);
+  const bounds = ll.reduce((b, c) => b.extend(c), new gl.LngLatBounds(ll[0], ll[0]));
+  const pad = () => (document.documentElement.clientWidth < 500 ? 40 : 60);
+
+  const map = new gl.Map({
+    container: `map-${day.id}`,
+    style: dark ? MAP_STYLE.dark : MAP_STYLE.light,
+    bounds, fitBoundsOptions: { padding: pad() },
+    cooperativeGestures: true, attributionControl: false, maxPitch: 75, locale: MAP_LOCALE
+  });
+  map.addControl(new gl.NavigationControl({ visualizePitch: true }), "top-right");
+  map.addControl(new gl.AttributionControl({ compact: true }), "bottom-right");
+
+  const empty = () => ({ type: "FeatureCollection", features: [] });
+  const line = c => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: c } });
+  const st = { pending: empty(), shuttle: empty(), drive: empty(), is3d: true };
+  const push = id => { const src = map.getSource(id); if (src) src.setData(st[id]); };
+
+  // 셔틀 구간과, 이어지는 운전 구간 묶음
+  const runs = []; let run = null;
+  day.legs.forEach((lg, i) => {
+    if (lg.shuttle) { st.shuttle.features.push(line([ll[i], ll[i + 1]])); run = null; return; }
+    if (!run) { run = [i]; runs.push(run); }
+    run.push(i + 1);
+  });
+  st.pending.features = runs.map(r => line(r.map(i => ll[i])));
+
+  // 한국어 지명, 지형 음영, 3D 지형, 하늘, 경로 레이어 (스타일을 바꿔도 다시 붙음)
+  let styleOk = false, fellBack = false;
+  map.on("style.load", () => {
+    styleOk = true;
+    const layers = map.getStyle().layers;
+    layers.forEach(l => {
+      if (l.type === "symbol" && l.layout && l.layout["text-field"]) {
+        try { map.setLayoutProperty(l.id, "text-field", ["coalesce", ["get", "name:ko"], ["get", "name"]]); } catch (e) {}
+      }
+    });
+    const firstSymbol = (layers.find(l => l.type === "symbol") || {}).id;
+    try {
+      map.addSource("dem-hill", { type: "raster-dem", tiles: [DEM_TILES], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
+      map.addSource("dem-3d", { type: "raster-dem", tiles: [DEM_TILES], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
+      map.addLayer({ id: "hill", type: "hillshade", source: "dem-hill",
+        paint: { "hillshade-exaggeration": dark ? 0.5 : 0.35, "hillshade-shadow-color": dark ? "#000000" : "#4a3b2a", "hillshade-highlight-color": dark ? "#2a3a3e" : "#ffffff" } }, firstSymbol);
+      if (st.is3d) map.setTerrain({ source: "dem-3d", exaggeration: 1.5 });
+    } catch (e) {}
+    try {
+      map.setSky({ "sky-color": dark ? "#0f1a1f" : "#bfe3ec", "horizon-color": dark ? "#1d2c31" : "#f4efe6", "fog-color": dark ? "#12181a" : "#fbf7f1", "sky-horizon-blend": 0.6, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 });
+    } catch (e) {}
+    ["pending", "shuttle", "drive"].forEach(id => map.addSource(id, { type: "geojson", data: st[id] }));
+    const lineBase = { type: "line", layout: { "line-cap": "round", "line-join": "round" } };
+    map.addLayer({ ...lineBase, id: "pending", source: "pending", paint: { "line-color": color, "line-width": 3, "line-opacity": 0.45, "line-dasharray": [2, 2] } });
+    map.addLayer({ ...lineBase, id: "shuttle", source: "shuttle", paint: { "line-color": color, "line-width": 3.5, "line-dasharray": [0.5, 2] } });
+    map.addLayer({ ...lineBase, id: "drive-casing", source: "drive", paint: { "line-color": dark ? "#0b1214" : "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 6, 14, 11], "line-opacity": 0.9 } });
+    map.addLayer({ ...lineBase, id: "drive", source: "drive", paint: { "line-color": color, "line-width": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 14, 7] } });
+  });
+  map.on("error", () => {
+    if (!styleOk && !fellBack && dark) { fellBack = true; map.setStyle(MAP_STYLE.light); }
+  });
+
+  // 번호 핀과 말풍선
+  const markers = day.route.map((k, i) => {
+    const p = PLACES[k], t = stopTime(day, k);
+    const el = document.createElement("button");
+    el.type = "button"; el.className = "pin"; el.style.setProperty("--c", color);
+    el.setAttribute("aria-label", `${i + 1}. ${p.name}`);
+    el.innerHTML = `<span><i>${i + 1}</i></span>`;
+    const popup = new gl.Popup({ offset: 30, closeButton: false, maxWidth: "240px" }).setHTML(
+      `<div class="pop"><small>${i + 1}번째${t ? " · " + esc(t) : ""}</small><b>${esc(p.name)}</b><a href="${kakaoTo(k)}" target="_blank" rel="noopener">🚗 카카오맵 길안내</a></div>`);
+    return new gl.Marker({ element: el, anchor: "bottom" }).setLngLat(ll[i]).setPopup(popup).addTo(map);
+  });
+  const closeAll = () => markers.forEach(m => { const pp = m.getPopup(); if (pp && pp.isOpen()) pp.remove(); });
+  const focusStop = i => {
+    closeAll();
+    map.flyTo({ center: ll[i], zoom: 14.2, pitch: st.is3d ? 60 : 0, bearing: st.is3d ? -20 : 0, duration: reduce ? 0 : 2000, essential: true });
+    map.once("moveend", () => markers[i].getPopup().addTo(map));
+  };
+  const overview = (ms = 1600) => {
+    const cam = map.cameraForBounds(bounds, { padding: pad() });
+    map.easeTo({ ...cam, pitch: st.is3d ? 45 : 0, bearing: st.is3d ? -12 : 0, duration: reduce ? 0 : ms });
+  };
+
+  // 도로 경로 받아서 그리기 (실패하면 직선 점선 유지)
+  let km = 0, failed = false;
+  const routes = Promise.all(runs.map(r => {
+    const coords = r.map(i => ll[i].join(",")).join(";");
+    return fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+      .then(res => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then(j => { const rt = j.routes && j.routes[0]; if (!rt) throw 0; km += rt.distance / 1000; return rt.geometry.coordinates; })
+      .catch(() => { failed = true; return null; });
+  }));
+  const loaded = new Promise(res => map.once("load", res));
+  const visible = new Promise(res => {
+    if (!("IntersectionObserver" in window)) return res();
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); res(); } }, { threshold: 0.35 });
+    io.observe(map.getContainer());
+  });
+
+  loaded.then(() => overview(1800));
+  Promise.all([routes, loaded, visible]).then(([lines]) => {
+    if (km) document.getElementById(`km-${day.id}`).textContent = ` · 약 ${Math.round(km)}km`;
+    if (failed) say("일부 구간은 도로 경로를 불러오지 못해 점선(직선)으로 표시했어요.");
+    const got = lines.map((c, ri) => c || null);
+    st.pending.features = runs.map((r, ri) => (got[ri] ? null : line(r.map(i => ll[i])))).filter(Boolean);
+    push("pending");
+    const parts = got.filter(Boolean);
+    if (!parts.length) return;
+    const total = parts.reduce((s, c) => s + c.length, 0);
+    const draw = n => {
+      let left = n; const feats = [];
+      for (const c of parts) { if (left < 2) break; const take = Math.min(c.length, left); feats.push(line(c.slice(0, take))); left -= take; }
+      st.drive.features = feats; push("drive");
+    };
+    if (reduce) { draw(total); return; }
+    const t0 = performance.now(), dur = 2200;
+    const step = now => {
+      const f = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - f, 3);
+      draw(Math.max(2, Math.ceil(total * e)));
+      if (f < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+
+  // 3D 켜기/끄기
+  const d3 = document.getElementById(`d3-${day.id}`);
+  d3.addEventListener("click", () => {
+    st.is3d = !st.is3d;
+    d3.setAttribute("aria-pressed", String(st.is3d));
+    try { map.setTerrain(st.is3d ? { source: "dem-3d", exaggeration: 1.5 } : null); } catch (e) {}
+    map.easeTo({ pitch: st.is3d ? 50 : 0, bearing: st.is3d ? map.getBearing() || -12 : 0, duration: reduce ? 0 : 900 });
+  });
+
+  // 경로 따라가기: 방문 순서대로 날아가며 장소를 보여 줌
+  const tourBtn = document.getElementById(`tour-${day.id}`);
+  let touring = 0;
+  const pause = ms => new Promise(r => setTimeout(r, ms));
+  const moved = () => new Promise(r => map.once("moveend", r));
+  tourBtn.addEventListener("click", async () => {
+    if (touring) { touring = 0; map.stop(); return; }
+    const id = touring = Date.now();
+    tourBtn.textContent = "■ 멈추기"; tourBtn.setAttribute("aria-pressed", "true");
+    for (let i = 0; i < ll.length && touring === id; i++) {
+      closeAll();
+      const next = ll[Math.min(i + 1, ll.length - 1)], here = ll[i];
+      const bearing = st.is3d ? (Math.atan2(next[0] - here[0], next[1] - here[1]) * 180) / Math.PI : 0;
+      map.flyTo({ center: here, zoom: 14, pitch: st.is3d ? 62 : 0, bearing, duration: reduce ? 0 : 2600, essential: true });
+      await moved();
+      if (touring !== id) break;
+      markers[i].getPopup().addTo(map);
+      await pause(1700);
+    }
+    if (touring === id) { closeAll(); overview(2200); }
+    touring = 0;
+    tourBtn.textContent = "▶ 경로 따라가기"; tourBtn.setAttribute("aria-pressed", "false");
+  });
+
+  document.querySelectorAll(`.stop[data-day="${day.id}"]`).forEach(b =>
+    b.addEventListener("click", () => { touring = 0; focusStop(Number(b.dataset.i)); }));
+
+  // 화면 테마가 바뀌면 지도도 바꿈
+  darkMQ.addEventListener?.("change", () => location.reload());
+}
+
+const won = n => "₩" + n.toLocaleString("ko-KR");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const toMin = t => { const [h, m] = t.trim().split(":").map(Number); return h * 60 + m; };
+
+const daysEl = document.getElementById("days");
+const tabsEl = document.getElementById("tabs");
+let grand = 0;
+const subtotals = [];
+
+DAYS.forEach(day => {
+  const sub = day.items.reduce((s, it) => s + (it[2] || 0), 0);
+  grand += sub; subtotals.push([day, sub]);
+
+  tabsEl.insertAdjacentHTML("beforeend",
+    `<a href="#${day.id}">${day.label}<small>${day.date}</small></a>`);
+
+  const lis = day.items.map(([time, title, price, hours, map, note, move, place], i) => {
+    const tags = [
+      price ? `<span class="tag price">${won(price)}</span>` : "",
+      hours ? `<span class="tag hours">🕒 ${esc(hours)}</span>` : "",
+      map ? `<a class="tag map" href="${esc(map)}" target="_blank" rel="noopener">📍 지도 보기</a>` : "",
+      place ? `<a class="tag nav" href="${kakaoTo(place)}" target="_blank" rel="noopener">🚗 길안내</a>` : ""
+    ].join("");
+    return `<li class="item${move ? " move" : ""}" data-day="${day.iso}" data-time="${esc(time)}">
+      <div class="card">
+        <div class="time">${esc(time)}</div>
+        <div class="title">${esc(title)}</div>
+        ${tags && !move ? `<div class="meta">${tags}</div>` : ""}
+        ${note ? `<div class="note">${esc(note)}</div>` : ""}
+      </div>
+    </li>`;
+  }).join("");
+
+  daysEl.insertAdjacentHTML("beforeend", `
+    <section class="day" id="${day.id}">
+      <div class="day-head">
+        <h2><em>${day.label}</em>${day.date}</h2>
+        <span class="sub">인당 ${won(sub)}</span>
+      </div>
+      ${routeMap(day)}
+      <ol class="timeline">${lis}</ol>
+    </section>`);
+});
+
+document.getElementById("total").innerHTML = `
+  <h3>💰 인당 예상 비용</h3>
+  ${subtotals.map(([d, s]) => `<div class="row"><span>${d.label} ${d.date}</span><span>${won(s)}</span></div>`).join("")}
+  <div class="row sum"><span>합계</span><span>${won(grand)}</span></div>`;
+
+// 여행 당일에는 지금 진행 중인 일정을 강조 (한국 시간 기준)
+function highlightNow() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => (o[p.type] = p.value, o), {});
+  const today = `${parts.year}-${parts.month}-${parts.day}`;
+  const nowMin = (Number(parts.hour) % 24) * 60 + Number(parts.minute);
+
+  document.querySelectorAll(".item").forEach(li => {
+    li.classList.remove("now");
+    li.querySelector(".now-badge")?.remove();
+  });
+  const items = [...document.querySelectorAll(`.item[data-day="${today}"]`)];
+  let current = null;
+  items.forEach(li => {
+    const [a, b] = li.dataset.time.split("-");
+    const start = toMin(a), end = b ? toMin(b) : start + 30;
+    if (nowMin >= start && nowMin < end) current = li;
+  });
+  if (current) {
+    current.classList.add("now");
+    current.querySelector(".title").insertAdjacentHTML("beforeend", `<span class="now-badge">진행 중</span>`);
+  }
+  return current;
+}
+DAYS.forEach(initMap);
+const cur = highlightNow();
+if (cur && !location.hash) cur.scrollIntoView({ block: "center" });
+setInterval(highlightNow, 60000);
+</script>
+</body>
+</html>
