@@ -139,6 +139,16 @@
   .tool:disabled { opacity: .5; cursor: default; }
   .tool.primary { background: var(--c); border-color: var(--c); color: var(--on-accent); }
   .tool:focus-visible, .stop:focus-visible, .pin:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+  .map-wrap { position: relative; }
+  .tour-card { position: absolute; z-index: 3; top: 10px; left: 10px; right: 52px; max-width: 360px; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); animation: card-in .25s ease-out; }
+  .tour-card .n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: var(--on-accent); font-weight: 900; font-size: 14px; }
+  .tour-card.moving .n { background: var(--bg); color: var(--c); border: 2px solid var(--c); }
+  .tour-card .t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .tour-card .t b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tour-card .t small { font-size: 12px; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .tour-card .cnt { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { .tour-card { animation: none; } }
   .route-map .map { position: relative; height: 440px; background: var(--water); border-block: 1px solid var(--line); }
   @media (max-width: 500px) { .route-map .map { height: 360px; } }
   .route-map .maplibregl-map { font-family: "Noto Sans KR", system-ui, sans-serif; }
@@ -306,7 +316,10 @@ function routeMap(day) {
         <button type="button" class="tool primary" id="tour-${day.id}" aria-pressed="false" disabled>▶ 경로 따라가기</button>
       </div>
     </figcaption>
-    <div class="map" id="map-${day.id}" role="region" aria-label="${day.date} 이동 경로 지도"></div>
+    <div class="map-wrap">
+      <div class="map" id="map-${day.id}" role="region" aria-label="${day.date} 이동 경로 지도"></div>
+      <div class="tour-card" id="card-${day.id}" aria-live="polite" hidden></div>
+    </div>
     <ol class="strip">${strip}</ol>
     <p class="map-note" id="note-${day.id}" hidden></p>
   </figure>`;
@@ -471,9 +484,24 @@ async function initMap(day) {
     try { map.setPaintProperty(id, "line-opacity", on ? 0.3 : id === "pending" ? 0.45 : 1); } catch (e) {}
   });
   const pinOn = i => markers.forEach((m, k) => m.getElement().classList.toggle("on", k === i));
+  // 지도 위 안내 카드: 도착한 장소 / 이동 중인 구간
+  const card = document.getElementById(`card-${day.id}`);
+  const itemOf = k => day.items.find(x => x[7] === k);
+  const showStop = i => {
+    const k = day.route[i], it = itemOf(k), name = PLACES[k].name;
+    const flat = t => t.replace(/\s/g, "");
+    const what = it && flat(it[1]) !== flat(name) ? it[1] : "";
+    card.innerHTML = `<span class="n">${i + 1}</span><div class="t"><b>${esc(name)}</b><small>${[it ? it[0] : "", what].filter(Boolean).map(esc).join(" · ")}</small></div><span class="cnt">${i + 1}/${ll.length}</span>`;
+    card.classList.remove("moving"); card.hidden = false;
+  };
+  const showMove = i => {
+    const lg = day.legs[i], to = PLACES[day.route[i + 1]].name;
+    card.innerHTML = `<span class="n">→</span><div class="t"><b>${esc(to)}</b><small>${lg.shuttle ? "셔틀" : "🚗 차로"} 약 ${lg.min}분 이동 중</small></div><span class="cnt">${i + 1}→${i + 2}</span>`;
+    card.classList.add("moving"); card.hidden = false;
+  };
   const reset = () => {
     st.progress = empty(); st.head = empty(); push("progress"); push("head");
-    dim(false); pinOn(-1);
+    dim(false); pinOn(-1); card.hidden = true;
     tourBtn.textContent = "▶ 경로 따라가기"; tourBtn.setAttribute("aria-pressed", "false");
   };
   const along = (c, cum, d) => {
@@ -488,9 +516,9 @@ async function initMap(day) {
     const id = touring = Date.now();
     closeAll(); overview(700);
     tourBtn.textContent = "■ 멈추기"; tourBtn.setAttribute("aria-pressed", "true");
-    dim(true); pinOn(0);
+    dim(true); pinOn(0); showStop(0);
     st.head.features = [point(ll[0])]; push("head");
-    await pause(reduce ? 0 : 750);
+    await pause(reduce ? 0 : 1300);
 
     const legs = legCoords.map(c => {
       const cum = [0]; for (let j = 1; j < c.length; j++) cum.push(cum[j - 1] + segKm(c[j - 1], c[j]));
@@ -501,7 +529,8 @@ async function initMap(day) {
     const done = [];
 
     for (let i = 0; i < legs.length && touring === id; i++) {
-      const L = legs[i], dur = reduce ? 0 : Math.max(450, (L.len / totalKm) * TOTAL_MS);
+      const L = legs[i], dur = reduce ? 0 : Math.max(700, (L.len / totalKm) * TOTAL_MS);
+      showMove(i);
       await new Promise(resolve => {
         const t0 = performance.now();
         const step = now => {
@@ -518,10 +547,10 @@ async function initMap(day) {
       });
       if (touring !== id) break;
       done.push(line(L.c));
-      pinOn(i + 1);
-      await pause(reduce ? 0 : 550);
+      pinOn(i + 1); showStop(i + 1);
+      await pause(reduce ? 0 : 1300);
     }
-    if (touring === id) { await pause(1200); if (touring === id) { touring = 0; reset(); } }
+    if (touring === id) { await pause(800); if (touring === id) { touring = 0; reset(); } }
   });
 
   document.querySelectorAll(`.stop[data-day="${day.id}"]`).forEach(b =>
